@@ -4,7 +4,7 @@ require 'colorize'
 require_relative 'config.rb'
 require_relative 'convert.rb'
 
-BEGIN { system('clear') }
+STDOUT.sync = true
 RETRY_DURATION = 5
 RETRY_ATTEMPTS = 5
 LOGO_OUTPUT = 0.05
@@ -48,6 +48,8 @@ end
 if silent_mode
     STDOUT.reopen(File.new('/dev/null', 'w'))
     STDERR.reopen(File.new('/dev/null', 'w'))
+else
+    system('clear')
 end
 
 logo = File.read('logo.txt') if File.exist?('logo.txt')
@@ -66,17 +68,16 @@ Telegram::Bot::Client.run(TOKEN, url: API_SERVER) do |bot|
                         puts "Chat member updated, skipping message processing.".yellow.italic
                         next
                     end
-
                     begin
+                        puts sprintf(
+                            "[ID: #{msg.chat.id}][%-10s%-20s: %-20s] [TIME: %-20s]\n",
+                            "New message from ".green,
+                            "#{msg.from.first_name}".green.bold, 
+                            "#{msg.text}".black.on_white.italic,
+                            "#{Time.now}".cyan.blink
+                        ) if msg.text
                         case msg.text
                         when '/start'
-                            puts sprintf(
-                                "[ID: #{msg.chat.id}][%-10s%-20s: %-20s] [TIME: %-20s]\n",
-                                "New message from ".green,
-                                "#{msg.from.first_name}".green.bold, 
-                                "#{msg.text}".black.on_white.italic,
-                                "#{Time.now}".cyan.blink
-                            )
                             bot.api.send_message(
                                 chat_id: msg.chat.id, 
                                 text: "Hello, *#{msg.from.first_name}*\ntelegram requirement:\n\\- The duration of circle video will be limited to one minute",
