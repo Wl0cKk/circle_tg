@@ -25,7 +25,7 @@ class VideoProcessor
 			resolution: '640x640',
 			preset: 'medium',
 			duration: 60,
-			сustom: %w(-vf crop='min(iw,ih)':min(iw\,ih),scale=640:640,setsar=1) # it looks like custom is not processed at all
+			custom: %w(-vf crop='min(iw,ih)':min(iw\,ih),scale=640:640,setsar=1)
 		}
 		movie.transcode(@output, options)
 		STDOUT.reopen(original_stdout)
@@ -37,15 +37,3 @@ class VideoProcessor
 		File.delete(@output) if File.exist?(@output)
 	end
 end
-
-=begin
-	Tested on: 
-
-	ffmpeg -i input.mp4 
-		-vf "crop='min(iw,ih)':min(iw\,ih),scale=640:640,setsar=1" # line in the wrapper streamio-ffmpeg that is not processed
-		-c:v libx264 -preset medium 
-		-b:v 500k -maxrate 500k 
-		-bufsize 1000k -c:a aac 
-		-b:a 128k -t 60 
-		-shortest output.mp4
-=end
