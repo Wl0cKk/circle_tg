@@ -5,12 +5,11 @@ require_relative 'config.rb'
 require_relative 'convert.rb'
 
 BEGIN { system('clear') }
-VIDEO_BASE = 'videos' 
 RETRY_DURATION = 5
 RETRY_ATTEMPTS = 5
 LOGO_OUTPUT = 0.05
 
-if ARGV.include?('-h') || ARGV.include?('--help')
+if ARGV.any? { |arg| ['-h', '--help', '-help'].include?(arg) }
     puts <<~HELP
         Usage: ruby bot.rb [options]
         Options:
@@ -57,19 +56,17 @@ logo.each_line do |line|
     sleep(LOGO_OUTPUT)
 end
 
-Dir.mkdir(VIDEO_BASE) unless Dir.exist?(VIDEO_BASE)
-
-Telegram::Bot::Client.run(TOKEN) do |bot|
+Telegram::Bot::Client.run(TOKEN, url: API_SERVER) do |bot|
     begin
         bot.listen do |msg|
             Thread.new {
                 begin
                     retries = 0
-                    # Check for ChatMemberUpdated type and skip processing if true
                     if msg.is_a?(Telegram::Bot::Types::ChatMemberUpdated)
                         puts "Chat member updated, skipping message processing.".yellow.italic
                         next
                     end
+
                     begin
                         case msg.text
                         when '/start'
@@ -82,7 +79,7 @@ Telegram::Bot::Client.run(TOKEN) do |bot|
                             )
                             bot.api.send_message(
                                 chat_id: msg.chat.id, 
-                                text: "Hello, *#{msg.from.first_name}*\ntelegram requirement:\n\\- Video no larger than 20MB\n\\- The duration of circle video will be limited to one minute",
+                                text: "Hello, *#{msg.from.first_name}*\ntelegram requirement:\n\\- The duration of circle video will be limited to one minute",
                                 parse_mode: 'MarkdownV2'
                             )
                         end
@@ -95,11 +92,8 @@ Telegram::Bot::Client.run(TOKEN) do |bot|
                                 "#{Time.now}".cyan.blink
                             )
                             video_file = bot.api.get_file(file_id: msg.video.file_id)
-                            file_path = video_file.file_path
-                            file_url = "https://api.telegram.org/file/bot#{TOKEN}/#{file_path}"
-                            video_path = "#{VIDEO_BASE}/#{msg.video.file_id}"
+                            video_path = video_file.file_path
                             converted_video_path = "#{video_path}-CONVERTED.mp4"
-                            File.open(video_path, 'wb') { |f| f.write HTTParty.get(file_url).body }
 
                             processor = VideoProcessor.new(video_path, converted_video_path, verbose_mode)
                             processor.convert_video_to_note
@@ -113,7 +107,7 @@ Telegram::Bot::Client.run(TOKEN) do |bot|
                             puts "The bot was blocked by the user.".red.bold
                         elsif e.error_code == 400
                             bot.api.send_message(chat_id: msg.chat.id, text: "```\n#{e}```", parse_mode: 'MarkdownV2')
-                            puts "#{e} - Telegram limitations".red.blink
+                            puts "#{e}".red.blink +  " - Telegram limitations".red
                         else
                             puts "#{e}".red.blink
                         end
@@ -128,9 +122,9 @@ Telegram::Bot::Client.run(TOKEN) do |bot|
                         else
                             puts "Exceeded maximum retry attempts. Stopping retry.".red.bold
                         end
-                    end # begin
+                    end
                 rescue NoMethodError => e
-                    puts "NoMethodError: #{e.message} - Perhaps the message does not have a text property.".red
+                    puts "NoMethodError: #{e.message} - Perhaps the message does not have right property.".red
                 end
             } # Thread
         end

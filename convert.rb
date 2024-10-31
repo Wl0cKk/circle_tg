@@ -20,11 +20,10 @@ class VideoProcessor
 			audio_codec: 'aac',
 			video_bitrate: 500,
 			audio_bitrate: 128,
-			video_max_bitrate: 500,
 			video_buffer_size: 1000,
 			resolution: '640x640',
-			preset: 'medium',
-			duration: 60,
+			preset: 'ultrafast', # https://superuser.com/questions/490683/cheat-sheets-and-preset-settings-that-actually-work-with-ffmpeg-1-0
+			duration: 60, # this restriction applies to all
 			custom: %w(-vf crop='min(iw,ih)':min(iw\,ih),scale=640:640,setsar=1)
 		}
 		movie.transcode(@output, options)
