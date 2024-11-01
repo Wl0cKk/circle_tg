@@ -7,7 +7,7 @@ class VideoProcessor
 		@verbose = verbose
 	end
 	
-	def convert_video_to_note
+	def convert_to_note
 		output_manager do
 			movie = FFMPEG::Movie.new(@input)
 			options = {

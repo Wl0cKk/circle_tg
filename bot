@@ -105,19 +105,19 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                             )
                             video_file = bot.api.get_file(file_id: msg.video.file_id)
                             video_path = video_file.file_path
-                            converted_video_path = "#{video_path}-CONVERTED.mp4"
+                            converted_video = "#{video_path}-CONVERTED.mp4"
                             Thread.new do
-                                processor = VideoProcessor.new(video_path, converted_video_path, verbose_mode)
-                                processor.convert_video_to_note
+                                processor = VideoProcessor.new(video_path, converted_video, verbose_mode)
+                                processor.convert_to_note
                                 if caption
                                     CONFIG['channels'].each do |channel_id|
                                         bot.api.send_video_note(
                                             chat_id: channel_id, 
-                                            video_note: Faraday::UploadIO.new(converted_video_path, 'video/mp4'),
+                                            video_note: Faraday::UploadIO.new(converted_video, 'video/mp4'),
                                         )
                                     end
                                 else
-                                    bot.api.send_video_note(chat_id: msg.chat.id, video_note: Faraday::UploadIO.new(converted_video_path, 'video/mp4'))
+                                    bot.api.send_video_note(chat_id: msg.chat.id, video_note: Faraday::UploadIO.new(converted_video, 'video/mp4'))
                                 end
                                 processor.remove_junk unless keep_files
                                 puts sprintf("[TIME: %-20s] [%-10s]\n", "#{Time.new}".cyan.blink, "Completed successfully".green.bold)
@@ -125,7 +125,7 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                         end
                     rescue Telegram::Bot::Exceptions::ResponseError => e
                         if e.error_code == 403
-                            puts "The bot was blocked by the user.".red.bold
+                            puts "Bot was blocked by the user.".red.bold
                         elsif e.error_code == 400
                             bot.api.send_message(chat_id: msg.chat.id, text: "```\n#{e}```", parse_mode: 'MarkdownV2')
                             puts "#{e}".red.blink +  " - Telegram limitations".red
