@@ -64,6 +64,12 @@ end
 Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
     begin
         bot.listen do |msg|
+            begin 
+                bot.api.send_message(chat_id: msg.chat.id, text: "#{JSON.pretty_generate(msg)}")
+            rescue Telegram::Bot::Exceptions::ResponseError => e
+                sleep (2) if e.error_code == 403
+                retry
+            end
             Thread.new {
                 begin
                     retries = 0
@@ -101,7 +107,17 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                             Thread.new do
                                 processor = VideoProcessor.new(video_path, converted_video_path, verbose_mode)
                                 processor.convert_video_to_note
-                                bot.api.send_video_note(chat_id: msg.chat.id, video_note: Faraday::UploadIO.new(converted_video_path, 'video/mp4'))
+                                if msg.caption
+                                    CONFIG['channels'].each do |channel_id|
+                                        bot.api.send_video_note(
+                                            chat_id: channel_id, 
+                                            video_note: Faraday::UploadIO.new(converted_video_path, 'video/mp4'),
+                                            caption: msg.caption
+                                        )
+                                    end
+                                else
+                                    bot.api.send_video_note(chat_id: msg.chat.id, video_note: Faraday::UploadIO.new(converted_video_path, 'video/mp4'))
+                                end
                                 processor.remove_junk unless keep_files
                                 puts sprintf("[TIME: %-20s] [%-10s]\n", "#{Time.new}".cyan.blink, "Completed successfully".green.bold)
                             end
