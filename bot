@@ -82,7 +82,7 @@ Telegram::Bot::Client.run(TOKEN, url: API_SERVER) do |bot|
                         when '/start'
                             bot.api.send_message(
                                 chat_id: msg.chat.id, 
-                                text: "Hello, *#{msg.from.first_name}*\ntelegram requirement:\n\\- The duration of circle video will be limited to one minute",
+                                text: "Hello, *#{msg.from.first_name}*\ntelegram requirement:\n\\- The duration of circle video is limited to one minute",
                                 parse_mode: 'MarkdownV2'
                             )
                         end
