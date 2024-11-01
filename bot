@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby --enable=mjit
+
 require 'telegram/bot'
 require 'httparty'
 require 'colorize'
@@ -74,7 +76,7 @@ Telegram::Bot::Client.run(TOKEN, url: API_SERVER) do |bot|
                             "New message from ".green,
                             "#{msg.from.first_name}".green.bold, 
                             "#{msg.text}".black.on_white.italic,
-                            "#{Time.now}".cyan.blink
+                            "#{Time.now}".cyan
                         ) if msg.text
                         case msg.text
                         when '/start'
@@ -90,7 +92,7 @@ Telegram::Bot::Client.run(TOKEN, url: API_SERVER) do |bot|
                                 "#{msg.from.first_name}".green.bold, 
                                 "sent the video".green, 
                                 "#{msg.video.file_id}".black.on_white.italic,
-                                "#{Time.now}".cyan.blink
+                                "#{Time.now}".cyan
                             )
                             video_file = bot.api.get_file(file_id: msg.video.file_id)
                             video_path = video_file.file_path
