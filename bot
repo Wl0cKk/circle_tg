@@ -109,7 +109,7 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                             Thread.new do
                                 processor = VideoProcessor.new(video_path, converted_video, verbose_mode)
                                 processor.convert_to_note
-                                if caption
+                                if caption 
                                     CONFIG['channels'].each do |channel_id|
                                         bot.api.send_video_note(
                                             chat_id: channel_id, 
