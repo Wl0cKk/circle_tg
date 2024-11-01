@@ -5,7 +5,7 @@ require 'httparty'
 require 'colorize'
 require 'json'
 require_relative 'convert.rb'
-require_relative 'caption_parse.rb'
+require_relative 'schedule.rb'
 
 STDOUT.sync = true
 RETRY_DURATION = 5
@@ -65,7 +65,6 @@ end
 Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
     begin
         bot.listen do |msg|
-            caption = msg.caption
             begin 
                 bot.api.send_message(chat_id: msg.chat.id, text: "#{JSON.pretty_generate(msg)}")
             rescue Telegram::Bot::Exceptions::ResponseError => e
@@ -74,6 +73,7 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
             end
             Thread.new {
                 begin
+                    caption = msg.caption
                     retries = 0
                     if msg.is_a?(Telegram::Bot::Types::ChatMemberUpdated)
                         puts "Chat member updated, skipping message processing.".yellow.italic
@@ -109,11 +109,21 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                             Thread.new do
                                 processor = VideoProcessor.new(video_path, converted_video, verbose_mode)
                                 processor.convert_to_note
-                                if caption 
-                                    CONFIG['channels'].each do |channel_id|
-                                        bot.api.send_video_note(
-                                            chat_id: channel_id, 
-                                            video_note: Faraday::UploadIO.new(converted_video, 'video/mp4'),
+                                if caption
+                                    begin
+                                        scheduler = CaptionSchedule.new
+                                        scheduler.schedule(caption) do
+                                            CONFIG['channels'].each { |channel_id|
+                                                bot.api.send_video_note(
+                                                    chat_id: channel_id, 
+                                                    video_note: Faraday::UploadIO.new(converted_video, 'video/mp4'),
+                                                )
+                                            } 
+                                        end
+                                    rescue CaptionError
+                                        bot.api.send_message(
+                                            chat_id: msg.chat.id, 
+                                            text: "Invalid time format, process will not be executed"
                                         )
                                     end
                                 else
