@@ -3,13 +3,14 @@
 require 'telegram/bot'
 require 'httparty'
 require 'colorize'
-require_relative 'config.rb'
+require 'json'
 require_relative 'convert.rb'
 
 STDOUT.sync = true
 RETRY_DURATION = 5
 RETRY_ATTEMPTS = 5
 LOGO_OUTPUT = 0.05
+CONFIG = JSON.parse(IO.read('config.json'))
 
 if ARGV.any? { |arg| ['-h', '--help', '-help'].include?(arg) }
     puts <<~HELP
@@ -60,7 +61,7 @@ logo.each_line do |line|
     sleep(LOGO_OUTPUT)
 end
 
-Telegram::Bot::Client.run(TOKEN, url: API_SERVER) do |bot|
+Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
     begin
         bot.listen do |msg|
             Thread.new {
@@ -97,13 +98,13 @@ Telegram::Bot::Client.run(TOKEN, url: API_SERVER) do |bot|
                             video_file = bot.api.get_file(file_id: msg.video.file_id)
                             video_path = video_file.file_path
                             converted_video_path = "#{video_path}-CONVERTED.mp4"
-
-                            processor = VideoProcessor.new(video_path, converted_video_path, verbose_mode)
-                            processor.convert_video_to_note
-                            bot.api.send_video_note(chat_id: msg.chat.id, video_note: Faraday::UploadIO.new(converted_video_path, 'video/mp4'))
-                            processor.remove_junk unless keep_files
-
-                            puts sprintf("[TIME: %-20s] [%-10s]\n", "#{Time.new}".cyan.blink, "Completed successfully".green.bold)
+                            Thread.new do
+                                processor = VideoProcessor.new(video_path, converted_video_path, verbose_mode)
+                                processor.convert_video_to_note
+                                bot.api.send_video_note(chat_id: msg.chat.id, video_note: Faraday::UploadIO.new(converted_video_path, 'video/mp4'))
+                                processor.remove_junk unless keep_files
+                                puts sprintf("[TIME: %-20s] [%-10s]\n", "#{Time.new}".cyan.blink, "Completed successfully".green.bold)
+                            end
                         end
                     rescue Telegram::Bot::Exceptions::ResponseError => e
                         if e.error_code == 403
