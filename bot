@@ -118,7 +118,8 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                                                     chat_id: channel_id, 
                                                     video_note: Faraday::UploadIO.new(converted_video, 'video/mp4'),
                                                 )
-                                            } 
+                                            }
+                                            processor.remove_junk unless keep_files
                                         end
                                     rescue CaptionError
                                         bot.api.send_message(
@@ -128,8 +129,8 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                                     end
                                 else
                                     bot.api.send_video_note(chat_id: msg.chat.id, video_note: Faraday::UploadIO.new(converted_video, 'video/mp4'))
+                                    processor.remove_junk unless keep_files
                                 end
-                                processor.remove_junk unless keep_files
                                 puts sprintf("[TIME: %-20s] [%-10s]\n", "#{Time.new}".cyan.blink, "Completed successfully".green.bold)
                             end
                         end
