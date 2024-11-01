@@ -7,6 +7,7 @@ require 'json'
 require_relative 'convert.rb'
 require_relative 'schedule.rb'
 
+START_TIME = Time.now
 STDOUT.sync = true
 RETRY_DURATION = 5
 RETRY_ATTEMPTS = 5
@@ -65,6 +66,7 @@ end
 Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
     begin
         bot.listen do |msg|
+            next if msg.date < START_TIME.to_i
             begin 
                 bot.api.send_message(chat_id: msg.chat.id, text: "#{JSON.pretty_generate(msg)}")
             rescue Telegram::Bot::Exceptions::ResponseError => e
