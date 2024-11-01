@@ -7,12 +7,13 @@ require 'json'
 require_relative 'convert.rb'
 require_relative 'schedule.rb'
 
-START_TIME = Time.now
 STDOUT.sync = true
-RETRY_DURATION = 5
-RETRY_ATTEMPTS = 5
-LOGO_OUTPUT = 0.05
+START_TIME = Time.now # to ignore old messages
+RETRY_DURATION = 5 # maybe the user accidentally blocked the bot
+RETRY_ATTEMPTS = 5 # 403 happens when you just added it to group, but after a moment 403 disappears. 
+LOGO_OUTPUT = 0.05 # line output speed for logos
 CONFIG = JSON.parse(IO.read('config.json'))
+STASH_DURATION = 10 # wait for S in the thread to know exactly the number of files in media_group_id.
 
 if ARGV.any? { |arg| ['-h', '--help', '-help'].include?(arg) }
     puts <<~HELP
@@ -63,6 +64,7 @@ logo.each_line do |line|
     sleep(LOGO_OUTPUT)
 end
 
+media_threads = {}
 Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
     begin
         bot.listen do |msg|
@@ -89,6 +91,7 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                             "#{msg.text}".black.on_white.italic,
                             "#{Time.now}".cyan
                         ) if msg.text
+                        
                         case msg.text
                         when '/start'
                             bot.api.send_message(
@@ -97,6 +100,7 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                                 parse_mode: 'MarkdownV2'
                             )
                         end
+
                         if msg.video
                             puts sprintf(
                                 "[ID: #{msg.chat.id}][%-10s %-20s - %-20s] [TIME: %-20s]\n", 
@@ -105,10 +109,10 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                                 "#{msg.video.file_id}".black.on_white.italic,
                                 "#{Time.now}".cyan
                             )
-                            video_file = bot.api.get_file(file_id: msg.video.file_id)
-                            video_path = video_file.file_path
-                            converted_video = "#{video_path}-CONVERTED.mp4"
                             Thread.new do
+                                video_file = bot.api.get_file(file_id: msg.video.file_id)
+                                video_path = video_file.file_path
+                                converted_video = "#{video_path}-CONVERTED.mp4"
                                 processor = VideoProcessor.new(video_path, converted_video, verbose_mode)
                                 processor.convert_to_note
                                 if caption
@@ -135,6 +139,21 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                                 end
                                 puts sprintf("[TIME: %-20s] [%-10s]\n", "#{Time.new}".cyan.blink, "Completed successfully".green.bold)
                             end
+                        elsif msg.document
+                            media_group_id = msg.media_group_id
+                            stash_path = File.expand_path("./#{media_group_id}.txt")
+                            unless media_threads[media_group_id]
+                                media_threads[media_group_id] = Thread.new do
+                                    sleep(STASH_DURATION)
+
+                                    media_threads.delete(media_group_id)
+                                end
+                            end
+                            document_file = bot.api.get_file(file_id: msg.document.file_id)
+                            document_path = document_file.file_path
+                            File.open(stash_path, 'a+') { |f|
+                                f.write("file '#{document_path.gsub(/['"]/, '')}'\n")
+                            }
                         end
                     rescue Telegram::Bot::Exceptions::ResponseError => e
                         if e.error_code == 403
@@ -162,6 +181,9 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                 end
             } # Thread
         end
+
+    media_threads.each_value(&:join) if media_threads.any?
+
     rescue Interrupt
         puts "\n[#{Time.now}] Bot has been stopped\n".green.underline.italic
     end
