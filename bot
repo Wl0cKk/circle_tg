@@ -14,6 +14,8 @@ RETRY_ATTEMPTS = 5 # 403 happens when you just added it to group, but after a mo
 LOGO_OUTPUT = 0.05 # line output speed for logos
 CONFIG = JSON.parse(IO.read('config.json'))
 STASH_DURATION = 10 # wait for S in the thread to know exactly the number of files in media_group_id.
+MISC_BASE = 'videos' 
+Dir.mkdir(MISC_BASE) unless Dir.exist?(MISC_BASE)
 
 if ARGV.any? { |arg| ['-h', '--help', '-help'].include?(arg) }
     puts <<~HELP
@@ -62,6 +64,10 @@ logo = File.read('logo.txt') if File.exist?('logo.txt')
 logo.each_line do |line|
     print "#{line}".red.on_black
     sleep(LOGO_OUTPUT)
+end
+
+def judge_cleaner(file_path, keep_files)
+    File.delete(file_path) if !keep_files && File.exist?(file_path)
 end
 
 media_threads = {}
@@ -113,7 +119,10 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                                 video_file = bot.api.get_file(file_id: msg.video.file_id)
                                 video_path = video_file.file_path
                                 converted_video = "#{video_path}-CONVERTED.mp4"
-                                processor = VideoProcessor.new(video_path, converted_video, verbose_mode)
+                                processor = VideoProcessor.new
+                                processor.input = video_path
+                                processor.output = converted_video
+                                processor.verbose = verbose_mode
                                 processor.convert_to_note
                                 if caption
                                     begin
@@ -140,12 +149,42 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
                                 puts sprintf("[TIME: %-20s] [%-10s]\n", "#{Time.new}".cyan.blink, "Completed successfully".green.bold)
                             end
                         elsif msg.document
+                            puts sprintf(
+                                "[ID: #{msg.chat.id}][%-10s %-20s - %-20s] [TIME: %-20s]\n", 
+                                "#{msg.from.first_name}".green.bold, 
+                                "sent document".green, 
+                                "#{msg.document.file_id}".black.on_white.italic,
+                                "#{Time.now}".cyan
+                            )
                             media_group_id = msg.media_group_id
-                            stash_path = File.expand_path("./#{media_group_id}.txt")
+                            stash_path = File.expand_path("./#{MISC_BASE}/#{media_group_id}.txt")
+                            concated_video = "#{stash_path}.mp4"
                             unless media_threads[media_group_id]
                                 media_threads[media_group_id] = Thread.new do
                                     sleep(STASH_DURATION)
+                                    processor = VideoProcessor.new
+                                    processor.input = stash_path
+                                    processor.output = concated_video
+                                    processor.verbose = verbose_mode
+                                    processor.concat_to_mpeg
+                                    movie = FFMPEG::Movie.new(concated_video)
+                                    bot.api.send_video(
+                                        chat_id: msg.chat.id,
+                                        video: Faraday::UploadIO.new(concated_video, 'video/mp4'),
+                                        caption: 'Send me that video if you want to get a circle message',
+                                        supports_streaming: true,
+                                        width: movie.width,
+                                        height: movie.height
+                                    )
+                                    File.foreach(stash_path) do |line|
+                                        if line =~ /file '(.*?)'/
+                                            file_path = Regexp.last_match(1)
+                                            judge_cleaner(file_path, keep_files)
+                                        end
+                                    end
+                                    processor.remove_junk unless keep_files
 
+                                    puts sprintf("[TIME: %-20s] [%-10s]\n", "#{Time.new}".cyan.blink, "Completed successfully".green.bold)
                                     media_threads.delete(media_group_id)
                                 end
                             end

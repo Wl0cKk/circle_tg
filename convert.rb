@@ -1,12 +1,10 @@
 require 'streamio-ffmpeg'
 
 class VideoProcessor
-	def initialize(input, output, verbose)
-		@input = input
-		@output = output
-		@verbose = verbose
-	end
+	attr_accessor :input, :output, :verbose
 	
+	FFMPEG.ffmpeg_binary = '/usr/local/bin/ffmpeg' 
+
 	def convert_to_note
 		output_manager do
 			movie = FFMPEG::Movie.new(@input)
@@ -22,6 +20,12 @@ class VideoProcessor
 				custom: %w(-vf crop='min(iw,ih)':min(iw\,ih),scale=640:640,setsar=1)
 			}
 			movie.transcode(@output, options)
+		end
+	end
+
+	def concat_to_mpeg
+		output_manager do
+			system("ffmpeg -f concat -safe 0 -i '#{@input}' -c copy '#{@output}'")
 		end
 	end
 
