@@ -10,6 +10,12 @@
 |✅| <details closed><summary>Combine multiple files into one mp4 and send it to you</summary><img src="https://i.imgur.com/AVOc6jX.png" alt="combine-files"></details> |
 |✅| <a href="#syntax-for-caption">Can send a circle to channels, at a given time</a>                                                                                                                   |
 
+### This bot avoid of some annoying limitations because it uses the [Local Bot API Server](https://core.telegram.org/bots/api#using-a-local-bot-api-server)
+
+### although this bot is [long polling](https://www.geeksforgeeks.org/what-is-long-polling-and-short-polling/), kill feature here is the size of files we can work with.
+
+> [!IMPORTANT]
+> ### But the circle video limit is still 60sec, so if the video is long it will be trimmed from the beginning to one minute 
 ---
 ## How to run
   ```bash
