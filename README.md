@@ -8,8 +8,63 @@
 |--|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |✅| <details closed><summary>Convert sent video into circles</summary><img src="https://i.imgur.com/BtSEUKD.png" alt="convert-video"></details>                        |
 |✅| <details closed><summary>Combine multiple files into one mp4 and send it to you</summary><img src="https://i.imgur.com/AVOc6jX.png" alt="combine-files"></details> |
-|✅| <a href="#syntax-for-caption">Can send a circle to a channel, at a given time</a>                                                                                                                   |
+|✅| <a href="#syntax-for-caption">Can send a circle to channels, at a given time</a>                                                                                                                   |
 
+---
+## How to run
+  ```bash
+    git clone https://github.com/Wl0cKk/circle_tg.git
+    cd circle_tg
+  ```
+  #### Then create or rename [config_example.json](https://github.com/Wl0cKk/circle_tg/blob/main/config_example.json) to config.json
+  `touch config.json` or `mv config_example.json config.json`
+  #### Open it in any editor and replace TOKEN with obtained token from [@BotFather](https://t.me/botfather)
+  > #### channels can be empty if you don't need broadcast feature.
+  
+  > [!IMPORTANT]  
+  > #### Get *API_ID* and *API_HASH* here - https://core.telegram.org/api/obtaining_api_id
+- ### Docker compose
+> [!TIP]
+  > - *In [Dockerfile.bot](https://github.com/Wl0cKk/circle_tg/blob/main/Dockerfile.bot) you can specify <a href="#options">arguments</a> separated by commas*
+  > - `CMD ["ruby", "--mjit", "./bot", "--server=http://telegram-bot-api:8081", "--keep_files", "--silent"]`
+  > Have you already installed docker and docker-compose?
+  #### Create or rename *[.env_example](https://github.com/Wl0cKk/circle_tg/blob/main/.env_example)* to *.env*
+  `touch .env` or `mv .env_example .env`
+  #### Open it in any editor and replace *API_ID* and *API_HASH* with yours
+  
+  ### *this will install what's needed and run*:
+  ```bash
+    docker-compose up --build
+  ```
+  > Installing telegram-bot-api takes a while.
+- ### Locally
+  > #### You need [ruby](https://www.ruby-lang.org/en/documentation/installation/) and [bundle](https://www.jetbrains.com/help/ruby/using-the-bundler.html#install_bundler) installed.
+  ```bash
+  ruby -v
+  bundle -v
+  ```
+  
+  #### install all <a href="https://github.com/tdlib/telegram-bot-api?tab=readme-ov-file#dependencies">dependencies</a> and follow the <a href="https://github.com/tdlib/telegram-bot-api?tab=readme-ov-file#installation">installation</a> proccess
+  #### Once installed you can run it with 
+  ```bash
+    telegram-bot-api --api-id=API_ID --api-hash=API_HASH --local
+  ``` 
+  #### Then open a new tab in terminal and do the following
+  ```bash
+  bundle install
+  ```
+  ```bash
+  ruby --mjit bot
+  ```
+  Specify the <a href="#options">arguments</a> if you wish
+---
+## Options
+> You can start bot using 3 arguments: --keep_files, --verbose, --silent.
+- **--keep_files** — *all files including submitted and edited files will not be deleted*
+- **--verbose** — *Log output from [FFMPEG](https://www.ffmpeg.org/) will <ins>not</ins> be muted*
+- **--silent** — *Everything will be muted, including logo output and telegram bot logs*
+> [!WARNING]  
+> *You can't run* **--verbose** *and* **--silent** *at the same time*
 ---
 ## Syntax for caption
 > [!NOTE]  
