@@ -33,6 +33,7 @@
 > [!TIP]
   > - *In [Dockerfile.bot](https://github.com/Wl0cKk/circle_tg/blob/main/Dockerfile.bot) you can specify <a href="#options">arguments</a> separated by commas*
   > - `CMD ["ruby", "--mjit", "./bot", "--server=http://telegram-bot-api:8081", "--keep_files", "--silent"]`
+
   > Have you already installed docker and docker-compose?
   #### Create or rename *[.env_example](https://github.com/Wl0cKk/circle_tg/blob/main/.env_example)* to *.env*
   `touch .env` or `mv .env_example .env`
