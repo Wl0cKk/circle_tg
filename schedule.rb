@@ -47,9 +47,9 @@ class CaptionParser
             time = add_duration(time, duration)
             return format_time(:at, time)
         end
-        if time_parts =~ /^\d{4}\/\d{1,2}\/\d{1,2} \d{1,2}:\d{2}:\d{2}/
+        if time_parts =~ /^\d{4}\/\d{1,2}\/\d{1,2} \d{1,2}:\d{1,2}:\d{1,2}/
             return format_time(:at, Time.parse(time_parts))
-        elsif time_parts =~ /^\d{1,2}:\d{2}(:\d{2})?$/
+        elsif time_parts =~ /^\d{1,2}:\d{1,2}(:\d{1,2})?$/
             time = Time.parse("#{time.strftime('%Y/%m/%d')} #{time_parts}")
             return format_time(:at, time)
         end
@@ -57,8 +57,8 @@ class CaptionParser
     end
 
     def self.valid_time_format?(time_parts)
-        time_parts =~ /^\d{4}\/\d{1,2}\/\d{1,2} \d{1,2}:\d{2}:\d{2}$/ ||
-        time_parts =~ /^\d{1,2}:\d{2}(:\d{2})?$/ ||
+        time_parts =~ /^\d{4}\/\d{1,2}\/\d{1,2} \d{1,2}:\d{1,2}:\d{1,2}$/ ||
+        time_parts =~ /^\d{1,2}:\d{1,2}(:\d{1,2})?$/ ||
         time_parts =~ /(\d+)([dhms])/
     end
 
