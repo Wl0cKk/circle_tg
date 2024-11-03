@@ -15,10 +15,10 @@ services:
       - "--api-id=${API_ID}"
       - "--api-hash=${API_HASH}"
       - "--local"
-    # volumes:
-      # - shared:/telegram-bot-api/
+    volumes:
+      - ./videos:/telegram-bot-api/
 
-  ruby-bot:
+  circle-bot:
     build:
       context: .
       dockerfile: Dockerfile.bot
@@ -26,11 +26,9 @@ services:
       - bot_network
     depends_on:
       - telegram-bot-api
-    # volumes:
-    #   - shared:/shared/
+    volumes:
+      - ./videos/:/app/videos/
+      - ./videos/:/telegram-bot-api
 
 networks:
   bot_network:
-
-# volumes:
-  # shared:
