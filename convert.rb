@@ -3,8 +3,6 @@ require 'streamio-ffmpeg'
 class VideoProcessor
 	attr_accessor :input, :output, :verbose
 	
-	FFMPEG.ffmpeg_binary = '/usr/local/bin/ffmpeg' 
-
 	def convert_to_note
 		output_manager do
 			movie = FFMPEG::Movie.new(@input)

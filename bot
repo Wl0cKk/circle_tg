@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby --enable=mjit
-
 require 'telegram/bot'
 require 'httparty'
 require 'colorize'
@@ -15,6 +13,7 @@ LOGO_OUTPUT = 0.05 # line output speed for logos
 CONFIG = JSON.parse(IO.read('config.json'))
 STASH_DURATION = 10 # wait for S in the thread to know exactly the number of files in media_group_id.
 MISC_BASE = 'videos' 
+
 Dir.mkdir(MISC_BASE) unless Dir.exist?(MISC_BASE)
 
 if ARGV.any? { |arg| ['-h', '--help', '-help'].include?(arg) }
@@ -34,17 +33,19 @@ end
 valid_args = {
     keep: '--keep_files',
     verbose: '--verbose',
-    silent: '--silent'
+    silent: '--silent',
 }
 
 valid_args_keys = valid_args.values 
-invalid_args = ARGV.select { |arg| !valid_args_keys.include?(arg) }
+invalid_args = ARGV.select { |arg| !valid_args_keys.include?(arg) && !arg.start_with?('--server=') }
 
 if invalid_args.any?
     invalid_args_string = invalid_args.map { |arg| "#{arg} (invalid)" }.join(', ')
     abort "Invalid arguments: #{invalid_args_string}. See bor.rb -h for help.".red.bold
 end
 
+api_server = ARGV.find { |arg| arg.start_with?('--server=') }
+api_server_url = api_server ? api_server.split('=')[1] : CONFIG['API_SERVER']
 keep_files   = ARGV.include?(valid_args[:keep])
 verbose_mode = ARGV.include?(valid_args[:verbose])
 silent_mode  = ARGV.include?(valid_args[:silent])
@@ -71,16 +72,10 @@ def judge_cleaner(file_path, keep_files)
 end
 
 media_threads = {}
-Telegram::Bot::Client.run(CONFIG['TOKEN'], url: CONFIG['API_SERVER']) do |bot|
+Telegram::Bot::Client.run(CONFIG['TOKEN'], url: api_server_url) do |bot|
     begin
         bot.listen do |msg|
             next if msg.date < START_TIME.to_i
-            begin 
-                bot.api.send_message(chat_id: msg.chat.id, text: "#{JSON.pretty_generate(msg)}")
-            rescue Telegram::Bot::Exceptions::ResponseError => e
-                sleep (2) if e.error_code == 403
-                retry
-            end
             Thread.new {
                 begin
                     caption = msg.caption
