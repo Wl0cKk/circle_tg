@@ -42,6 +42,8 @@
   ### *this will install what's needed and run*:
   ```bash
     mkdir videos
+  ```
+  ```bash
     docker-compose up --build
   ```
   > Installing telegram-bot-api takes a while.
