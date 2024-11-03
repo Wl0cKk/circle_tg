@@ -1,0 +1,36 @@
+services:
+  telegram-bot-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+    networks:
+      - bot_network
+    entrypoint:
+      - telegram-bot-api
+    command:
+      - "--api-id=${API_ID}"
+      - "--api-hash=${API_HASH}"
+      - "--local"
+    # volumes:
+      # - shared:/telegram-bot-api/
+
+  ruby-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    networks:
+      - bot_network
+    depends_on:
+      - telegram-bot-api
+    # volumes:
+    #   - shared:/shared/
+
+networks:
+  bot_network:
+
+# volumes:
+  # shared:
