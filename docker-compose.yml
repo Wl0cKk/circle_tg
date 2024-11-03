@@ -17,6 +17,7 @@ services:
       - "--local"
     volumes:
       - ./videos:/telegram-bot-api/
+    restart: always
 
   circle-bot:
     build:
@@ -29,6 +30,7 @@ services:
     volumes:
       - ./videos/:/app/videos/
       - ./videos/:/telegram-bot-api
+    restart: always
 
 networks:
   bot_network:

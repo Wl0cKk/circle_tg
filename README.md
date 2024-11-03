@@ -21,6 +21,7 @@
   ```bash
     git clone https://github.com/Wl0cKk/circle_tg.git
     cd circle_tg
+    mkdir videos
   ```
   #### Then create or rename [config_example.json](https://github.com/Wl0cKk/circle_tg/blob/main/config_example.json) to config.json
   `touch config.json` or `mv config_example.json config.json`
