@@ -38,11 +38,11 @@
   #### Create or rename *[.env_example](https://github.com/Wl0cKk/circle_tg/blob/main/.env_example)* to *.env*
   `touch .env` or `mv .env_example .env`
   #### Open it in any editor and replace *API_ID* and *API_HASH* with yours
-  
-  ### *this will install what's needed and run*:
+  ### *You are free to change the folder name, but do the same in [docker-compose.yml](https://github.com/Wl0cKk/circle_tg/blob/main/docker-compose.yml).*:
   ```bash
     mkdir videos
   ```
+  ### *this will install what's needed and run*:
   ```bash
     docker-compose up --build
   ```
