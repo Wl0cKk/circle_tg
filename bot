@@ -11,7 +11,13 @@ RETRY_DURATION = 5 # maybe the user accidentally blocked the bot
 RETRY_ATTEMPTS = 5 # 403 happens when you just added it to group, but after a moment 403 disappears. 
 LOGO_OUTPUT = 0.05 # line output speed for logos
 CONFIG = JSON.parse(IO.read('config.json'))
-STASH_DURATION = 10 # wait for S in the thread to know exactly the number of files in media_group_id.
+# 30 seconds was enough for 100 MB files.
+STASH_DURATION = {
+    '15MB' => 8
+    '30MB' => 13
+    '50MB' => 21
+    '100MB' => 34
+}
 MISC_BASE = 'videos' 
 
 Dir.mkdir(MISC_BASE) unless Dir.exist?(MISC_BASE)
@@ -72,6 +78,9 @@ def judge_cleaner(file_path, keep_files)
 end
 
 media_threads = {}
+group_files = {}
+mutex = Mutex.new
+
 Telegram::Bot::Client.run(CONFIG['TOKEN'], url: api_server_url) do |bot|
     begin
         bot.listen do |msg|
@@ -143,20 +152,30 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: api_server_url) do |bot|
                                 end
                                 puts sprintf("[TIME: %-20s] [%-10s]\n", "#{Time.new}".cyan.blink, "Completed successfully".green.bold)
                             end
-                        elsif msg.document
-                            puts sprintf(
-                                "[ID: #{msg.chat.id}][%-10s %-20s - %-20s] [TIME: %-20s]\n", 
-                                "#{msg.from.first_name}".green.bold, 
-                                "sent document".green, 
-                                "#{msg.document.file_id}".black.on_white.italic,
-                                "#{Time.now}".cyan
-                            )
+                        elsif msg.document && msg.media_group_id
                             media_group_id = msg.media_group_id
-                            stash_path = File.expand_path("./#{MISC_BASE}/#{media_group_id}.txt")
-                            concated_video = "#{stash_path}.mp4"
+                            mutex.synchronize {
+                                puts sprintf(
+                                    "[ID: #{msg.chat.id}][%-10s %-20s - %-20s] [TIME: %-20s]\n", 
+                                    "#{msg.from.first_name}".green.bold, 
+                                    "sent document".green, 
+                                    "#{msg.document.file_id}".black.on_white.italic,
+                                    "#{Time.now}".cyan
+                                )
+                                document_file = bot.api.get_file(file_id: msg.document.file_id)
+                                document_path = document_file.file_path
+                                group_files[media_group_id] ||= []
+                                group_files[media_group_id] << "file '#{document_path.gsub(/['"]/, '')}'\n"
+                            }
                             unless media_threads[media_group_id]
                                 media_threads[media_group_id] = Thread.new do
-                                    sleep(STASH_DURATION)
+                                    sleep(STASH_DURATION['100MB']) # WORK ON IT!
+                                    stash_path = File.expand_path("./#{MISC_BASE}/#{media_group_id}.txt")
+                                    concated_video = "#{stash_path}.mp4"
+                                    File.open(stash_path, 'a+') { |f|
+                                        group_files[media_group_id].each { |rec| f.write(rec) }
+                                    }
+                                    group_files.delete(media_group_id)
                                     processor = VideoProcessor.new
                                     processor.input = stash_path
                                     processor.output = concated_video
@@ -178,16 +197,11 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: api_server_url) do |bot|
                                         end
                                     end
                                     processor.remove_junk unless keep_files
-
                                     puts sprintf("[TIME: %-20s] [%-10s]\n", "#{Time.new}".cyan.blink, "Completed successfully".green.bold)
                                     media_threads.delete(media_group_id)
                                 end
                             end
-                            document_file = bot.api.get_file(file_id: msg.document.file_id)
-                            document_path = document_file.file_path
-                            File.open(stash_path, 'a+') { |f|
-                                f.write("file '#{document_path.gsub(/['"]/, '')}'\n")
-                            }
+                            media_threads[media_group_id].join if media_threads[media_group_id] && !media_threads[media_group_id].alive?
                         end
                     rescue Telegram::Bot::Exceptions::ResponseError => e
                         if e.error_code == 403
@@ -215,9 +229,6 @@ Telegram::Bot::Client.run(CONFIG['TOKEN'], url: api_server_url) do |bot|
                 end
             } # Thread
         end
-
-    media_threads.each_value(&:join) if media_threads.any?
-
     rescue Interrupt
         puts "\n[#{Time.now}] Bot has been stopped\n".green.underline.italic
     end
