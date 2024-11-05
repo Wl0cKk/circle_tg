@@ -13,9 +13,9 @@ LOGO_OUTPUT = 0.05 # line output speed for logos
 CONFIG = JSON.parse(IO.read('config.json'))
 # 30 seconds was enough for 100 MB files.
 STASH_DURATION = {
-    '15MB' => 8
-    '30MB' => 13
-    '50MB' => 21
+    '15MB' => 8,
+    '30MB' => 13,
+    '50MB' => 21,
     '100MB' => 34
 }
 MISC_BASE = 'videos' 
