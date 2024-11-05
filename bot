@@ -1,5 +1,4 @@
 require 'telegram/bot'
-require 'httparty'
 require 'colorize'
 require 'json'
 require_relative 'convert.rb'
